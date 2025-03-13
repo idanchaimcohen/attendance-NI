@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Code Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            text-align: center;
+            background-color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+        }
+        h3 {
+            margin-top: 20px;
+            color: #444;
+        }
+        #result {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 2rem 0;
+            color: #2c3e50;
+        }
+        .error {
+            color: #e74c3c;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        #adminPanel {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            display: none;
+            text-align: left;
+        }
+        #passwordPrompt {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            display: none;
+        }
+        .passwordBox {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            width: 300px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .status {
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .enabled {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .disabled {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .tab {
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+            border-radius: 5px 5px 0 0;
+        }
+        .tab button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+            font-size: 17px;
+            color: #333;
+            margin: 0;
+        }
+        .tab button:hover {
+            background-color: #ddd;
+        }
+        .tab button.active {
+            background-color: #3498db;
+            color: white;
+        }
+        .tabcontent {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .clearBtn {
+            background-color: #e74c3c;
+        }
+        .clearBtn:hover {
+            background-color: #c0392b;
+        }
+        .exportBtn {
+            background-color: #2ecc71;
+        }
+        .exportBtn:hover {
+            background-color: #27ae60;
+        }
+        #historyTable {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Attendance Code</h1>
+        <div id="result">----</div>
+        <button id="generateBtn">Generate Attendance Code</button>
+        
+        <div style="margin-top: 20px;">
+            <button id="adminBtn">Admin Controls</button>
+        </div>
+        
+        <div id="adminPanel">
+            <div class="tab">
+                <button class="tablinks active" onclick="openTab(event, 'Controls')">Controls</button>
+                <button class="tablinks" onclick="openTab(event, 'History')">Code History</button>
+                <button class="tablinks" onclick="openTab(event, 'Settings')">Settings</button>
+            </div>
+            
+            <div id="Controls" class="tabcontent" style="display: block;">
+                <h3>Admin Controls</h3>
+                <div id="statusIndicator" class="status">
+                    Status: Checking...
+                </div>
+                <button id="enableBtn">Enable Code Generator</button>
+                <button id="disableBtn">Disable Code Generator</button>
+            </div>
+            
+            <div id="History" class="tabcontent">
+                <h3>Code Generation History</h3>
+                <div class="historyActions">
+                    <button id="exportBtn" class="exportBtn">Export History (CSV)</button>
+                    <button id="clearHistoryBtn" class="clearBtn">Clear History</button>
+                </div>
+                <div id="historyTable">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <!-- History will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div id="Settings" class="tabcontent">
+                <h3>Settings</h3>
+                <button id="changePassBtn">Change Admin Password</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Password Prompt Modal -->
+    <div id="passwordPrompt">
+        <div class="passwordBox">
+            <h3 id="promptTitle">Enter Admin Password</h3>
+            <p id="promptMessage">Please enter the admin password to access controls.</p>
+            <input type="password" id="passwordInput" placeholder="Password">
+            <div>
+                <button id="submitPasswordBtn">Submit</button>
+                <button id="cancelPasswordBtn">Cancel</button>
+            </div>
+            <p id="passwordError" style="color: red; display: none;">Incorrect password!</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const resultElement = document.getElementById('result');
+            const generateBtn = document.getElementById('generateBtn');
+            const adminBtn = document.getElementById('adminBtn');
+            const adminPanel = document.getElementById('adminPanel');
+            const enableBtn = document.getElementById('enableBtn');
+            const disableBtn = document.getElementById('disableBtn');
+            const changePassBtn = document.getElementById('changePassBtn');
+            const passwordPrompt = document.getElementById('passwordPrompt');
+            const passwordInput = document.getElementById('passwordInput');
+            const submitPasswordBtn = document.getElementById('submitPasswordBtn');
+            const cancelPasswordBtn = document.getElementById('cancelPasswordBtn');
+            const passwordError = document.getElementById('passwordError');
+            const promptTitle = document.getElementById('promptTitle');
+            const promptMessage = document.getElementById('promptMessage');
+            const statusIndicator = document.getElementById('statusIndicator');
+            const historyTableBody = document.getElementById('historyTableBody');
+            const exportBtn = document.getElementById('exportBtn');
+            const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+            
+            // Default password if none set: "admin123"
+            if (!localStorage.getItem('adminPassword')) {
+                localStorage.setItem('adminPassword', 'admin123');
+            }
+            
+            // Initialize code history array if not exists
+            if (!localStorage.getItem('codeHistory')) {
+                localStorage.setItem('codeHistory', JSON.stringify([]));
+            }
+            
+            // Check service status from localStorage (default to enabled)
+            let isServiceEnabled = localStorage.getItem('codeServiceEnabled');
+            
+            // If it's the first visit, set it to enabled
+            if (isServiceEnabled === null) {
+                isServiceEnabled = 'true';
+                localStorage.setItem('codeServiceEnabled', isServiceEnabled);
+            }
+            
+            // Update status indicator
+            function updateStatusIndicator() {
+                if (isServiceEnabled === 'true') {
+                    statusIndicator.textContent = 'Status: Code Generator is ENABLED';
+                    statusIndicator.className = 'status enabled';
+                } else {
+                    statusIndicator.textContent = 'Status: Code Generator is DISABLED';
+                    statusIndicator.className = 'status disabled';
+                }
+            }
+            
+            // Load code history
+            function loadCodeHistory() {
+                const history = JSON.parse(localStorage.getItem('codeHistory'));
+                historyTableBody.innerHTML = '';
+                
+                if (history.length === 0) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = '<td colspan="3" style="text-align: center;">No history available</td>';
+                    historyTableBody.appendChild(row);
+                    return;
+                }
+                
+                // Sort history by date (newest first)
+                history.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                
+                // Populate table
+                history.forEach(entry => {
+                    const date = new Date(entry.timestamp);
+                    const formattedDate = date.toLocaleDateString();
+                    const formattedTime = date.toLocaleTimeString();
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${entry.code}</td>
+                        <td>${formattedDate}</td>
+                        <td>${formattedTime}</td>
+                    `;
+                    historyTableBody.appendChild(row);
+                });
+            }
+            
+            // Function to generate random 4-digit attendance code
+            function generateAttendanceCode() {
+                if (isServiceEnabled === 'true') {
+                    // Generate random number between 1000 and 9999
+                    const randomCode = Math.floor(Math.random() * 9000) + 1000;
+                    resultElement.textContent = randomCode;
+                    resultElement.classList.remove('error');
+                    
+                    // Add to history
+                    addToHistory(randomCode);
+                } else {
+                    resultElement.textContent = "Code unavailable";
+                    resultElement.classList.add('error');
+                }
+            }
+            
+            // Add code to history
+            function addToHistory(code) {
+                const history = JSON.parse(localStorage.getItem('codeHistory'));
+                history.push({
+                    code: code,
+                    timestamp: new Date().toISOString()
+                });
+                
+                // Save history (limit to last 1000 entries to prevent localStorage issues)
+                if (history.length > 1000) {
+                    history.shift(); // Remove oldest entry
+                }
+                
+                localStorage.setItem('codeHistory', JSON.stringify(history));
+                
+                // Reload history if tab is open
+                if (document.getElementById('History').style.display === 'block') {
+                    loadCodeHistory();
+                }
+            }
+            
+            // Export history as CSV
+            function exportHistory() {
+                const history = JSON.parse(localStorage.getItem('codeHistory'));
+                
+                if (history.length === 0) {
+                    alert('No history to export');
+                    return;
+                }
+                
+                // Create CSV content
+                let csvContent = 'Code,Date,Time\n';
+                
+                history.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).forEach(entry => {
+                    const date = new Date(entry.timestamp);
+                    const formattedDate = date.toLocaleDateString();
+                    const formattedTime = date.toLocaleTimeString();
+                    csvContent += `${entry.code},${formattedDate},${formattedTime}\n`;
+                });
+                
+                // Create download link
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'attendance_code_history.csv');
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+            
+            // Clear history
+            function clearHistory() {
+                if (confirm('Are you sure you want to clear all code history? This action cannot be undone.')) {
+                    localStorage.setItem('codeHistory', JSON.stringify([]));
+                    loadCodeHistory();
+                }
+            }
+            
+            // Generate code on button click
+            generateBtn.addEventListener('click', generateAttendanceCode);
+            
+            // Generate code on page load
+            generateAttendanceCode();
+            
+            // Admin button click handler
+            adminBtn.addEventListener('click', function() {
+                // Reset password input
+                passwordInput.value = '';
+                passwordError.style.display = 'none';
+                
+                // Configure prompt for admin access
+                promptTitle.textContent = 'Enter Admin Password';
+                promptMessage.textContent = 'Please enter the admin password to access controls.';
+                
+                // Set action for password submission
+                submitPasswordBtn.onclick = function() {
+                    const enteredPassword = passwordInput.value;
+                    const storedPassword = localStorage.getItem('adminPassword');
+                    
+                    if (enteredPassword === storedPassword) {
+                        // Hide prompt
+                        passwordPrompt.style.display = 'none';
+                        // Show admin panel
+                        adminPanel.style.display = 'block';
+                        // Update status indicator
+                        updateStatusIndicator();
+                        // Load code history
+                        loadCodeHistory();
+                    } else {
+                        passwordError.style.display = 'block';
+                    }
+                };
+                
+                // Show password prompt
+                passwordPrompt.style.display = 'flex';
+            });
+            
+            // Export history
+            exportBtn.addEventListener('click', exportHistory);
+            
+            // Clear history
+            clearHistoryBtn.addEventListener('click', clearHistory);
+            
+            // Cancel button in password prompt
+            cancelPasswordBtn.addEventListener('click', function() {
+                passwordPrompt.style.display = 'none';
+            });
+            
+            // Enable button click handler
+            enableBtn.addEventListener('click', function() {
+                isServiceEnabled = 'true';
+                localStorage.setItem('codeServiceEnabled', isServiceEnabled);
+                generateAttendanceCode();
+                updateStatusIndicator();
+            });
+            
+            // Disable button click handler
+            disableBtn.addEventListener('click', function() {
+                isServiceEnabled = 'false';
+                localStorage.setItem('codeServiceEnabled', isServiceEnabled);
+                generateAttendanceCode();
+                updateStatusIndicator();
+            });
+            
+            // Change password button
+            changePassBtn.addEventListener('click', function() {
+                // Reset password input
+                passwordInput.value = '';
+                passwordError.style.display = 'none';
+                
+                // Configure prompt for changing password
+                promptTitle.textContent = 'Change Admin Password';
+                promptMessage.textContent = 'Enter a new admin password:';
+                
+                // Set action for password submission
+                submitPasswordBtn.onclick = function() {
+                    const newPassword = passwordInput.value;
+                    
+                    if (newPassword.trim() !== '') {
+                        localStorage.setItem('adminPassword', newPassword);
+                        passwordPrompt.style.display = 'none';
+                        alert('Password has been changed successfully!');
+                    } else {
+                        passwordError.textContent = 'Password cannot be empty!';
+                        passwordError.style.display = 'block';
+                    }
+                };
+                
+                // Show password prompt
+                passwordPrompt.style.display = 'flex';
+            });
+            
+            // Close password prompt when clicking outside the box
+            passwordPrompt.addEventListener('click', function(event) {
+                if (event.target === passwordPrompt) {
+                    passwordPrompt.style.display = 'none';
+                }
+            });
+            
+            // Listen for Enter key in password input
+            passwordInput.addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    submitPasswordBtn.click();
+                }
+            });
+        });
+        
+        // Tab functionality
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+    </script>
+</body>
+</html>
